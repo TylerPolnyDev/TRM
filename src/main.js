@@ -1,4 +1,4 @@
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './main.css';
 
@@ -20,8 +20,8 @@ const awsMapStyle = `https://maps.geo.${region}.amazonaws.com/maps/v0/maps/${map
 // 4. Initialize the MapLibre GL map instance targeting the <div id="map">
 const map = new maplibregl.Map({
     container: 'map',
-    center: [-87.9065, 30.6954],
-    zoom: 12,
+    center: [-103.771556, 44.967244],
+    zoom: 3.5,
     style: awsMapStyle
 });
 
