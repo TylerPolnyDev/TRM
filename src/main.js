@@ -5,6 +5,7 @@ import './main.css';
 // 1. Read environment variables securely using Vite's import.meta.env system
 const region = import.meta.env.VITE_AWS_REGION;
 const mapName = import.meta.env.VITE_AWS_MAP_NAME;
+const placeIndex = import.meta.VITE_AWS_PLACE_INDEX_NAME;
 const apiKey = import.meta.env.VITE_AWS_API_KEY;
 
 // 2. Safety check to warn if an environment variable is missing
@@ -28,7 +29,16 @@ const map = new maplibregl.Map({
 // 5. Add standard navigation controls (zoom in/out and compass)
 map.addControl(new maplibregl.NavigationControl(), 'top-left');
 
-// 6. Listener to confirm the map rendered correctly
-map.on('load', () => {
-    console.log('MapLibre GL successfully connected to Amazon Location Service!');
+let currentMarker = null;
+
+map.on('click', async (e) => {
+    const lngLat = e.lngLat;
+    const coordinates = [lngLat.lng, lngLat.lat];
+
+    if (currentMarker) {
+        currentMarker.remove();
+    }
+
+    currentMarker = new maplibregl.Marker().setLngLat(coordinates).addTo(map);
+
 });
