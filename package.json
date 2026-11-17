@@ -22,6 +22,9 @@
   },
   "homepage": "https://github.com/TylerPolnyDev/TRM#readme",
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.1170.0",
+    "@aws-sdk/credential-provider-cognito-identity": "^3.972.83",
+    "@aws/amazon-location-utilities-auth-helper": "^1.3.3",
     "maplibre-gl": "^6.18.0",
     "vite": "^8.3.8"
   }
