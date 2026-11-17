@@ -3,24 +3,38 @@
 <head>
     <meta charset="utf-8">
     <title>Travel Research Map</title>
-
-    <!-- Styles -->
     <link href="./src/main.css" rel="stylesheet" />
 </head>
-
 <body>
-<header>
-    <h1>Travel Research Map</h1>
-</header>
-<main>
-    <div id="map"></div>
-    <script type="module" src="./src/main.js"></script>
-    <aside>
-        <h2>JSON Response</h2>
-        <pre id="json-content">Click the map to see details...</pre>
-    </aside>
-</main>
-<footer>This is a simple Amazon Location Service app. Pan and zoom. Click to see details about entities close to a point.</footer>
+    <!-- Auth Overlay-->
+    <div id="auth-container">
+        <div class="auth-card">
+            <h2>Travel Research Map - Sign In</h2>
+            <form id="auth-form">
+                <input type="email" id="email" placeholder="Email" required/>
+                <input type="password" id="password" placeholder="Password" required/>
+                <button type="submit" id="signin-btn">Sign In</button>
+                <button type="button" id="signup-btn">Create Account</button>
+            </form>
+            <p id="auth-message"></p>
+        </div>
+    </div>
 
+    <!-- Main App -->
+    <div id="app-container" style="display: none;">
+        <header>
+            <h1>Travel Research Map</h1>
+            <button id="logout-button">Sign Out</button>
+        </header>
+        <main>
+            <div id="map"></div>
+            <script type="module" src="./src/main.js"></script>
+            <aside>
+                <h2>JSON Response</h2>
+                <pre id="json-content">Click the map to see details...</pre>
+            </aside>
+        </main>
+        <footer>Authenticated Amazon Location Service App</footer>
+    </div>
 </body>
 </html>
