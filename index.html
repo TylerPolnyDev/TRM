@@ -34,8 +34,26 @@
             <div id="map"></div>
             <script type="module" src="./src/main.js"></script>
             <aside>
-                <h2>JSON Response</h2>
-                <pre id="json-content">Click the map to see details...</pre>
+                <h2>Area Insights</h2>
+                <div id="area-insights">
+                    <p class="placeholder-text">Click the map to see details...</p>
+
+                    <section class="insight-card" aria-labelledby="weather-heading">
+                        <h3 id="weather-heading">Weather</h3>
+                        <p id="weather-content">--</p>
+                    </section>
+
+                    <section class="insight-card" aria-labelledby="gas-heading">
+                        <h3 id="gas-heading">Average Gas Prices</h3>
+                        <p id="gas-content">--</p>
+                    </section>
+
+                    <section class="insight-card" aria-labelledby="crime-heading">
+                        <h3 id="crime-heading">Crime Rate</h3>
+                        <p id="crime-content">--</p>
+                    </section>
+
+                </div>
             </aside>
         </main>
         <footer>Authenticated Amazon Location Service App</footer>
