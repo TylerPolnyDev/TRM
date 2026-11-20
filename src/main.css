@@ -38,13 +38,39 @@ aside {
 }
 
 h2 {
-    margin: 0;
+    margin: 0 0 0.75rem 0;
 }
 
-pre {
-    white-space: pre-wrap;
-    font-family: monospace;
+h3 {
+    margin: 0 0 0.35rem 0;
+    font-size: 1rem;
     color: #16191f;
+}
+
+.placeholder-text {
+    margin: 0 0 1rem 0;
+    color: #545b64;
+    font-size: 0.9rem;
+}
+
+.insight-card {
+    background: #ffffff;
+    border: 1px solid #d5dbdb;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.insight-card p {
+    margin: 0;
+    color: #16191f;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.error-text {
+    color: #b31b1b;
+    font-size: 0.9rem;
 }
 
 footer {
