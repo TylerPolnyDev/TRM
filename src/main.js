@@ -43,6 +43,8 @@ const authMessage = document.getElementById('auth-message');
 const signinBtn = document.getElementById('signin-btn');
 const signupBtn = document.getElementById('signup-btn');
 const confirmBtn = document.getElementById('confirm-btn');
+const returnMessage = document.getElementById("return-message");
+const returnBtn = document.getElementById("return-to-signin");
 const logoutBtn = document.getElementById('logout-btn');
 const jsonContentEl = document.getElementById('json-content');
 
@@ -105,11 +107,25 @@ signupBtn.addEventListener('click', async ()=> {
         // Update UI to show confirmation code input
         confirmationCodeInput.style.display = "block";
         confirmBtn.style.display = 'inline-block';
+        returnMessage.style.display = "block";
+        returnBtn.style.display ="inline-block";
         signupBtn.style.display = 'none';
         signinBtn.style.display = 'none';
     } catch (err) {
         authMessage.textContent = err.message;
     }
+});
+
+// Handles action for returnBtn clicked
+returnBtn.addEventListener('click', async() => {
+    confirmationCodeInput.style.display = "none";
+    confirmBtn.style.display = 'none';
+    returnMessage.style.display = "none";
+    returnBtn.style.display ="none";
+    signupBtn.style.display = 'inline-block';
+    signinBtn.style.display = 'inline-block';
+    authMessage.textContent = '';
+
 });
 
 // Handles action for confirm button clicked by user
@@ -126,6 +142,8 @@ confirmBtn.addEventListener('click', async () => {
         confirmBtn.style.display = "none";
         signupBtn.style.display = 'inline-block';
         signinBtn.style.display = 'inline-block';
+        returnMessage.style.display = "none";
+        returnBtn.style.display = "none";
 
     } catch (e) {
         authMessage.textContent = e.message;
