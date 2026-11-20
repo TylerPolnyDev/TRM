@@ -73,6 +73,28 @@ function setInsightsError(message) {
     crimeContentEl.textContent = "Unavailable";
 }
 
+const WMO_WEATHER_LABELS = {
+    0: "Clear sky",
+    1: "Mainly clear",
+    2: "Partly cloudy",
+    3: "Overcast",
+    45: "Fog",
+    48: "Depositing rime fog",
+    51: "Light drizzle",
+    53: "Moderate drizzle",
+    55: "Dense drizzle",
+    61: "Slight rain",
+    63: "Moderate rain",
+    65: "Heavy rain",
+    71: "Slight snow",
+    73: "Moderate snow",
+    75: "Heavy snow",
+    80: "Rain showers",
+    81: "Moderate rain showers",
+    82: "Violent rain showers",
+    95: "Thunderstorm",
+};
+
 function renderInsights(data) {
     if (areaStatusEl) {
         areaStatusEl.textContent = `Area: ${data.region || "Selected Location"}`;
@@ -81,10 +103,22 @@ function renderInsights(data) {
 
     const weather = data.weather || {};
     if (weather.temperatureF !== null && weather.temperatureF !== undefined) {
-        const windPart = weather.windMph !== null && weather.windMph !== undefined
-            ? ` · Wind: ${weather.windMph} mph`
-            : "";
-        weatherContentEl.textContent = `${weather.temperatureF}°F${windPart}`;
+        const parts = [`Current Temperature: ${weather.temperatureF}°F\n`];
+
+        if (weather.windMph !== null && weather.windMph !== undefined) {
+            parts.push(`Wind Speed: ${weather.windMph} mph\n`);
+        }
+
+        if (weather.weatherCode !== null && weather.weatherCode !== undefined) {
+            const label = WMO_WEATHER_LABELS[weather.weatherCode];
+            parts.push(
+                label
+                    ? `Condition: ${label}`
+                    : `Weather Code: ${weather.weatherCode}`
+            );
+        }
+
+        weatherContentEl.textContent = parts.join(" · ");
     } else {
         weatherContentEl.textContent = weather.summary || "Unavailable";
     }
@@ -103,7 +137,6 @@ function renderInsights(data) {
         crimeContentEl.textContent = crime.note || "No crime rate data available yet.";
     }
 }
-
 async function fetchAreaInsights(lat, lng, regionLabel, idToken) {
     if (!apiBaseUrl) {
         setInsightsError("Missing VITE_API_BASE_URL in .env.");
