@@ -13,6 +13,7 @@ const placeIndex = import.meta.env.VITE_AWS_PLACE_INDEX_NAME;
 const userPoolId = import.meta.env.VITE_AWS_USER_POOL_ID;
 const clientId = import.meta.env.VITE_AWS_USER_POOL_CLIENT_ID;
 const identityPoolId = import.meta.env.VITE_AWS_IDENTITY_POOL_ID;
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '');
 
 // Safety check to warn if an environment variable is missing
 if (!region || !mapName || !userPoolId || !clientId || !identityPoolId) {
@@ -20,7 +21,9 @@ if (!region || !mapName || !userPoolId || !clientId || !identityPoolId) {
         "Missing required AWS configuration. Please verify your .env file contains VITE_AWS_REGION, VITE_AWS_MAP_NAME, VITE_AWS_USER_POOL_ID, VITE_AWS_USER_POOL_CLIENT_ID and VITE_AWS_IDENTITY_POOL_ID."
     );
 }
-
+if (!apiBaseUrl) {
+    console.warn("VITE_API_BASE_URL is not set in .env; area insights API requests will not run.");
+}
 // Configure Amplify Auth
 Amplify.configure({
     Auth:{
@@ -46,7 +49,79 @@ const confirmBtn = document.getElementById('confirm-btn');
 const returnMessage = document.getElementById("return-message");
 const returnBtn = document.getElementById("return-to-signin");
 const logoutBtn = document.getElementById('logout-btn');
-const jsonContentEl = document.getElementById('json-content');
+const areaStatusEl = document.querySelector('.placeholder-text');
+const weatherContentEl = document.getElementById('weather-content');
+const gasContentEl = document.getElementById('gas-content');
+const crimeContentEl = document.getElementById('crime-content');
+
+function setInsightsLoading(locationLabel) {
+    if (areaStatusEl) {
+        areaStatusEl.textContent = `Loading area insights for ${locationLabel}...`;
+        areaStatusEl.classList.remove('error-text');
+    }
+    weatherContentEl.textContent = "Loading...";
+    gasContentEl.textContent = "Loading...";
+    crimeContentEl.textContent = "Loading...";
+}
+function setInsightsError(message) {
+    if (areaStatusEl) {
+        areaStatusEl.textContent = message;
+        areaStatusEl.classList.add('error-text');
+    }
+    weatherContentEl.textContent = "Unavailable";
+    gasContentEl.textContent = "Unavailable";
+    crimeContentEl.textContent = "Unavailable";
+}
+
+function renderInsights(data) {
+    if (areaStatusEl) {
+        areaStatusEl.textContent = `Area: ${data.region || "Selected Location"}`;
+        areaStatusEl.classList.remove('error-text');
+    }
+
+    const weather = data.weather || {};
+    if (weather.temperatureF !== null && weather.temperatureF !== undefined) {
+        const windPart = weather.windMph !== null && weather.windMph !== undefined
+            ? ` · Wind: ${weather.windMph} mph`
+            : "";
+        weatherContentEl.textContent = `${weather.temperatureF}°F${windPart}`;
+    } else {
+        weatherContentEl.textContent = weather.summary || "Unavailable";
+    }
+
+    const gas = data.gasPrice || {};
+    if (gas.averageRegularUsd !== null && gas.averageRegularUsd !== undefined) {
+        gasContentEl.textContent = `$${Number(gas.averageRegularUsd).toFixed(2)} / gal (${gas.area || data.region || "Area"})`;
+    } else {
+        gasContentEl.textContent = gas.note || "No gas price data available yet.";
+    }
+
+    const crime = data.crimeRate || {};
+    if (crime.ratePer100k !== null && crime.ratePer100k !== undefined) {
+        crimeContentEl.textContent = `${crime.ratePer100k} per 100k (${crime.area || data.region || "Area"})`;
+    } else {
+        crimeContentEl.textContent = crime.note || "No crime rate data available yet.";
+    }
+}
+
+async function fetchAreaInsights(lat, lng, regionLabel, idToken) {
+    if (!apiBaseUrl) {
+        setInsightsError("Missing VITE_API_BASE_URL in .env.");
+        return;
+    }
+
+    const url = `${apiBaseUrl}/insights?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&region=${encodeURIComponent(regionLabel)}`;
+    const headers = {};
+    if (idToken) {
+        headers.Authorization = `Bearer ${idToken}`;
+    }
+
+    const res = await fetch(url, { method: "GET", headers });
+    if (!res.ok) {
+        throw new Error(`Insights API returned ${res.status}`);
+    }
+    return res.json();
+}
 
 // Check if user is logged in.
 async function checkUser() {
@@ -59,9 +134,7 @@ async function checkUser() {
                 await initMap();
             } catch (mapErr) {
                 console.error("Map initialization error:", mapErr);
-                jsonContentEl.textContent = JSON.stringify({
-                    error: "Map initialization failed: " + mapErr.message
-                }, null, 2);
+                setInsightsError(`Map initialization failed: ${mapErr.message}`);
             }
         } else {
             authContainer.style.display = 'flex';
@@ -76,6 +149,7 @@ async function checkUser() {
         appContainer.style.display = 'none';
     }
 }
+
 // Handles action for submit button clicked by user
 authForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -94,6 +168,7 @@ authForm.addEventListener('submit', async (e) => {
         authMessage.textContent = err.message;
     }
 });
+
 // Handles action for sign-up button clicked by user
 signupBtn.addEventListener('click', async ()=> {
     try{
@@ -179,6 +254,10 @@ async function initMap() {
     map.addControl(new maplibregl.NavigationControl(), 'top-left');
 
     let currentMarker = null;
+    const locationClient = new LocationClient({
+        region: region,
+        ...authHelper.getLocationClientConfig()
+    });
 
     map.on('click', async (e) => {
         const lngLat = e.lngLat;
@@ -189,10 +268,8 @@ async function initMap() {
         }
         currentMarker = new maplibregl.Marker().setLngLat(coordinates).addTo(map);
 
-        const client = new LocationClient({
-            region: region,
-            ...authHelper.getLocationClientConfig()
-        });
+        let locationName = "Selected Location";
+        let regionLabel = "";
 
         try {
             const command = new SearchPlaceIndexForPositionCommand({
@@ -201,22 +278,32 @@ async function initMap() {
                 MaxResults: 1
             });
 
-            const response = await client.send(command);
-            jsonContentEl.textContent = JSON.stringify(response, null, 2);
-
-            let locationName = "Selected Location";
-            if (response.Results && response.Results.length > 0) {
-                locationName = response.Results[0].Place.Label;
+            const response = await locationClient.send(command);
+            const place = response.Results?.[0]?.Place;
+            if (place) {
+                locationName = place.Label || locationName;
+                regionLabel = place.Region || place.Municipality || place.Label || "";
             }
-
-            new maplibregl.Popup()
-                .setLngLat(coordinates)
-                .setHTML(`<strong>${locationName}</strong><br>Lng: ${lngLat.lng.toFixed(4)}, Lat: ${lngLat.lat.toFixed(4)}`)
-                .addTo(map);
-
         } catch (error) {
             console.error("Error querying Amazon Location Service:", error);
-            jsonContentEl.textContent = JSON.stringify({ error: error.message }, null, 2);
+        }
+
+        new maplibregl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(`<strong>${locationName}</strong><br>Lng: ${lngLat.lng.toFixed(4)}, Lat: ${lngLat.lat.toFixed(4)}`)
+            .addTo(map);
+
+        setInsightsLoading(locationName);
+
+        try {
+            // Refresh session in case the user has been active for a while
+            const freshSession = await fetchAuthSession();
+            const freshIdToken = freshSession.tokens?.idToken?.toString() || idToken;
+            const insightsData = await fetchAreaInsights(lngLat.lat, lngLat.lng, regionLabel, freshIdToken);
+            renderInsights(insightsData);
+        } catch (err) {
+            console.error("Error fetching area insights:", err);
+            setInsightsError(`Could not load area insights: ${err.message}`);
         }
     });
 }
